@@ -10,46 +10,66 @@
      [Parameter(Mandatory=$false)][string]$WinscpPath="C:\Program Files (x86)\WinSCP\WinSCPnet.dll",
      [Parameter(Mandatory=$false)][string]$DestinationFolderStructure="/{Year}/{Month}{Day}/{InstanceName}/{DatabaseName}/",
      [Parameter(Mandatory=$false)][string]$SshHostKeyFingerprint,
-     [Parameter(Mandatory=$false)][System.Net.NetworkCredential]$DestinationCredential,
+     [Parameter(Mandatory=$true)][string][ValidateSet("BySystemNetworkCredentialObject","ByStoredCredentialName","ByCiphertextFile","ByCiphertext", IgnoreCase=$true)]$CredentialType="ByCiphertext",
+     [Parameter(Mandatory=$false)][System.Net.NetworkCredential]$DestinationCredentialObject,
      [Parameter(Mandatory=$false)][string]$DestinationCredentialName,
+     [Parameter(Mandatory=$false)][string]$DestinationCredentialCiphertextUser,
+     [Parameter(Mandatory=$false)][string]$DestinationCredentialCiphertextPassword,
+     [Parameter(Mandatory=$false)][string]$DestinationCredentialCiphertextFile,
      [Parameter(Mandatory=$true)][string][ValidateSet("COPY","MOVE", IgnoreCase=$true)]$ActionType="COPY",
      [Parameter(Mandatory=$false)][string]$RetainDaysOnDestination,
      [Parameter(Mandatory=$false)][string]$TransferedSuffix="_Transfered",
      [Parameter(Mandatory=$false)][string]$LogInstanceConnectionString,
      [Parameter(Mandatory=$false)][string]$LogTableName="[dbo].[Events]",
-     [Parameter(Mandatory=$true)][string]$LogFilePath
+     [Parameter(Mandatory=$true)][string]$LogFilePath="C:\Log\TransferBackup_{Date}.txt"
  )
-##$SourceInstanceConnectionString = "Data Source=DB-SH-DLV01.SAIPACORP.COM\SHAREPOINT,49149;Initial Catalog=msdb;Integrated Security=True;" #"Data Source=DB-C1-DLV01.sqldeep.local\Node,49149;Initial Catalog=msdb;user=sa;password=Armin1355$;encrypt=true;trustservercertificate=true"
-##$DatabasesToTransfer = "All_Databases"
-##$ExceptedDatabasesForTransfer = ""
-##$BackupTypeToTransfer = "ALL"
-##$HoursToScanForUntransferredBackups = 1
-###$myCred=New-Object System.Net.NetworkCredential("oracle", "orbk_DB_bkl002")
-###$myCred=New-Object System.Net.NetworkCredential("Saipacorp\299294", "Armin1355`$Nasim")
-####$myCred=(Get-StoredCredential -Target "SqlDeepBackupCredentialUNC").GetNetworkCredential()
-##$myCred=(Get-StoredCredential -Target "SqlDeepBackupCredentialSCP").GetNetworkCredential()
-##$DestinationType = "SCP"    #"FTP","SFTP","UNC"
-##$Destination = "172.20.5.2"   #"\\DB-C1-DLV18\U$\Install"
-##$WinscpPath = "U:\Install\PS\WinSCP\WinSCPnet.dll"
-##$DestinationFolderStructure = "/bk_sql/test/{CustomRule01}/{CustomRule02}/{InstanceName}" #"/bk_sql/{InstanceName}/{Year}_{Month}/{Day}/",  "{InstanceName}\{Year}_{Month}\{Day}\"
-##$SshHostKeyFingerprint="ssh-ed25519 256 xEkJwBAimRr3rfS3Hm+dnKc5lSTABvDUntt+itokHPw="
-##$DestinationCredential = $myCred
+
+##[string]$SourceInstanceConnectionString = "Data Source=DB-C1-DLV01.sqldeep.local\Node,49149;Initial Catalog=msdb;user=sa;password=Armin1355$;encrypt=true;trustservercertificate=true"
+##[string]$DatabasesToTransfer = "All_Databases"
+##[string]$ExceptedDatabasesForTransfer = ""
+##[string]$BackupTypeToTransfer = "ALL"
+##[int]$HoursToScanForUntransferredBackups = 72
+##[string]$DestinationType = "SCP"    #"FTP","SFTP","UNC"
+##[string]$Destination = "192.168.5.5"   #"\\DB-C1-DLV50\U$\Install"
+##[string]$WinscpPath = "U:\Install\PS\WinSCP\WinSCPnet.dll"
+##[string]$DestinationFolderStructure = "/bk_sql/test/{CustomRule01}/{CustomRule02}/{InstanceName}" #"/bk_sql/{InstanceName}/{Year}_{Month}/{Day}/",  "{InstanceName}\{Year}_{Month}\{Day}\"
+##[string]$SshHostKeyFingerprint="ssh-ed25519 256 xEkJwBAimRr3rfbloblobloblob---"
+##[string]$CredentialType="ByCiphertext"
+##[System.Net.NetworkCredential]$DestinationCredentialObject        #New-Object System.Net.NetworkCredential("oracle", "P@$$W0RD")  OR  New-Object System.Net.NetworkCredential("sqldeep\siavash", "Ali`$Nasir")    OR      (Get-StoredCredential -Target "SqlDeepBackupCredentialUNC").GetNetworkCredential()
+##[string]$DestinationCredentialName            #"SqlDeepBackupCredentialSCP"
+##[string]$DestinationCredentialCiphertextUser="oracle"
+##[string]$DestinationCredentialCiphertextPassword="01000000d08c9ddf0115d1118c7a00c04fc297eb01000000"
+##[string]$DestinationCredentialCiphertextFile  #"C:\myPassfile.txt"
 ##$ActionType = "COPY" #"MOVE"
-##$RetainDaysOnSource = 0
-##$RetainDaysOnDestination = 0
-##$TransferedSuffix = "_Siavash04"
-##$LogInstanceConnectionString = "Data Source=DB-MN-DLV02.SAIPACORP.COM\NODE,49149;Initial Catalog=EventLog;Integrated Security=True;"
+##$RetainDaysOnDestination = "0"    # OR "CustomRule01"
+##$TransferedSuffix = "_Transfered"
+##$LogInstanceConnectionString = "Data Source=DB-MN-DLV01.sqldeep.local\NODE,49149;Initial Catalog=EventLog;Integrated Security=True;"
 ##$LogTableName="[dbo].[Events]"
-##$LogFilePath = "U:\Install\PS\log.txt"
+##$LogFilePath = "U:\Install\PS\TransferBackup_{Date}.txt"
 #---------------------------------------------------------How to Define Credential in windows credential manager
 #   --Install PS Credential Module
 #   Install-Module CredentialManager -force
 #   Import-Module CredentialManager
 #   --Create Credential
-#   New-StoredCredential -Target "SqlDeepFTP" -Type Generic -UserName 'oracle' -Password 'P@$$Word' -Persist LocalMachine
+#   BySystemNetworkCredentialObject:
+#        $DestinationCredential=$DestinationCredentialObject #Get-Credential
+#   ByStoredCredentialName:
+#        New-StoredCredential -Target "SqlDeepBackupCredentialSCP" -Type Generic -UserName 'oracle' -Password 'P@$$Word' -Persist LocalMachine
+#        $DestinationCredential=(Get-StoredCredential -Target "SqlDeepBackupCredentialSCP").GetNetworkCredential()
+#   ByCiphertextFile:
+#        (Get-Credential).Password | ConvertFrom-SecureString | Out-File $DestinationCredentialCiphertextFile       #"C:\Scripts\password.txt"
+#        [SecureString]$myPassword = Get-Content $DestinationCredentialCiphertextFile | ConvertTo-SecureString 
+#        $myUser=$DestinationCredentialCiphertextUser
+#        $DestinationCredential = (New-Object System.Management.Automation.PsCredential -ArgumentList $myUser,$myPassword).GetNetworkCredential()
+#   ByCiphertext:
+#        (Get-Credential).Password | ConvertFrom-SecureString | Out-File $DestinationCredentialCiphertextFile       #"C:\Scripts\password.txt"
+#        $DestinationCredentialCiphertextPassword = Get-Content $DestinationCredentialCiphertextFile
+#        [SecureString]$myPassword = $DestinationCredentialCiphertextPassword | ConvertTo-SecureString 
+#        $myUser=$DestinationCredentialCiphertextUser
+#        $DestinationCredential = (New-Object System.Management.Automation.PsCredential -ArgumentList $myUser,$myPassword).GetNetworkCredential()
 #---------------------------------------------------------FUNCTIONS
 Function Get-FunctionName ([int]$StackNumber = 1) { #Create Log Table if not exists
-    return [string]$(Get-PSCallStack)[$StackNumber].FunctionName
+    return [string](Get-PSCallStack)[$StackNumber].FunctionName
 }
 Function EventsTable.Create {   #Create Events Table to Write Logs to a database table if not exists
     Param
@@ -83,7 +103,8 @@ Function EventsTable.Create {   #Create Events Table to Write Logs to a database
                 [IsSMS] [bit] NOT NULL DEFAULT (0),
                 [IsSent] [bit] NOT NULL DEFAULT (0),
                 PRIMARY KEY CLUSTERED ([Id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 85, Data_Compression=Page) ON [PRIMARY]
-            ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+            ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY];
+            CREATE NONCLUSTERED INDEX [NCIX_dbo_Events_Serverity] ON [dbo].[Events] ([Serverity] ASC,[IsSMS],[IsSent]) WITH (PAD_INDEX = ON, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = ON, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 85, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF, DATA_COMPRESSION = PAGE);
         END
     "
     try{
@@ -138,8 +159,11 @@ Function TransferredFilesTable.Create {  #Create TransferredFiles Table to Write
                 [max_family_sequence_number] [int] NOT NULL,
                 [DeleteDate] [datetime] NULL,
                 [IsDeleted] [bit] NOT NULL DEFAULT(0),
+                [TransferStatus] [nvarchar](50) NOT NULL DEFAULT(N'NONE'),
                 PRIMARY KEY CLUSTERED ([Id] ASC) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 85, Data_Compression=Page) ON [PRIMARY]
-            ) ON [PRIMARY]
+            ) ON [PRIMARY];
+            CREATE UNIQUE NONCLUSTERED INDEX UNQIX_dbo_TransferredFiles_Rec ON [dbo].[TransferredFiles] (Destination,DestinationFolder,Media_set_id,Family_sequence_number,InstanceName,DatabaseName) WITH (FillFactor=85,PAD_INDEX=ON,SORT_IN_TEMPDB=ON,DATA_COMPRESSION=PAGE);
+            CREATE NONCLUSTERED INDEX [NCIX_dbo_TransferredFiles_TransferStatus] ON [dbo].[TransferredFiles] ([TransferStatus] ASC)WITH (PAD_INDEX = ON, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = ON, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 85, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF, DATA_COMPRESSION = PAGE);
         END
     "
     try{
@@ -158,56 +182,86 @@ Function TransferredFilesTable.Insert {  #Create TransferredFiles Table to Write
         [Parameter(Mandatory=$true)][string]$TableName,
         [Parameter(Mandatory=$true)][string]$BatchId,
         [Parameter(Mandatory=$true)][string]$Destination,
+        [Parameter(Mandatory=$true)][string]$TransferStatus,
         [Parameter(Mandatory=$true)][System.Data.DataRow]$Record
         )
 
         $myAnswer=[bool]$true
         $myCommand="
-        INSERT INTO " + $TableName + "
-        (
-         [BatchId]
-        ,[Destination]
-        ,[DestinationFolder]
-        ,[UncBackupFilePath]
-        ,[media_set_id]
-        ,[family_sequence_number]
-        ,[MachineName]
-        ,[InstanceName]
-        ,[DatabaseName]
-        ,[backup_start_date]
-        ,[backup_finish_date]
-        ,[expiration_date]
-        ,[BackupType]
-        ,[BackupFirstLSN]
-        ,[BackupLastLSN]
-        ,[BackupFilePath]
-        ,[BackupFileName]
-        ,[max_family_sequence_number]
-        ,[DeleteDate]
-        ,[IsDeleted])
-  VALUES
-        (
-         '" + $BatchId + "'
-        ,'" + $Destination + "'
-        ,'" + $Record.DestinationFolder + "'
-        ,'" + $Record.UncBackupFilePath + "'
-        ," + $Record.media_set_id.ToString() + "
-        ," + $Record.family_sequence_number.ToString() + "
-        ,'" + $Record.MachineName + "'
-        ,'" + $Record.InstanceName + "'
-        ,'" + $Record.DatabaseName + "'
-        ,CAST('" + $Record.backup_start_date.ToString() + "' AS DATETIME)
-        ,CAST('" + $Record.backup_finish_date.ToString() + "' AS DATETIME)
-        ,CAST('" + $Record.expiration_date.ToString() + "' AS DATETIME)
-        ,'" + $Record.BackupType + "'
-        ," + $Record.BackupFirstLSN.ToString() + "
-        ," + $Record.BackupLastLSN.ToString() + "
-        ,'" + $Record.BackupFilePath + "'
-        ,'" + $Record.BackupFileName + "'
-        ," + $Record.max_family_sequence_number.ToString() + "
-        ,NULL
-        ,0
-        )
+        DECLARE @myBatchId [uniqueidentifier]
+        DECLARE @myEventTimeStamp [datetime]
+        DECLARE @myDestination [nvarchar](128)
+        DECLARE @myDestinationFolder [nvarchar](4000)
+        DECLARE @myUncBackupFilePath [nvarchar](4000)
+        DECLARE @myMedia_set_id [int]
+        DECLARE @myFamily_sequence_number [int]
+        DECLARE @myMachineName [nvarchar](255) 
+        DECLARE @myInstanceName [nvarchar](255)
+        DECLARE @myDatabaseName [nvarchar](255)
+        DECLARE @myBackup_start_date [datetime]
+        DECLARE @myBackup_finish_date [datetime]
+        DECLARE @myExpiration_date [datetime] 
+        DECLARE @myBackupType [nvarchar](255)
+        DECLARE @myBackupFirstLSN [decimal](28, 0) 
+        DECLARE @myBackupLastLSN [decimal](28, 0) 
+        DECLARE @myBackupFilePath [nvarchar](4000)
+        DECLARE @myBackupFileName [nvarchar](4000)
+        DECLARE @myMax_family_sequence_number [int]
+        DECLARE @myDeleteDate [datetime] 
+        DECLARE @myIsDeleted [bit]
+        DECLARE @myTransferStatus [nvarchar](50)
+        
+        SET @myBatchId = '" + $BatchId + "'
+        SET @myDestination = N'" + $Destination + "'
+        SET @myDestinationFolder = N'" + $Record.DestinationFolder + "'
+        SET @myUncBackupFilePath = N'" + $Record.UncBackupFilePath + "'
+        SET @myMedia_set_id = " + $Record.media_set_id.ToString() + "
+        SET @myFamily_sequence_number = " + $Record.family_sequence_number.ToString() + "
+        SET @myMachineName = CASE WHEN '" + $Record.MachineName + "'='' THEN NULL ELSE CAST('" + $Record.MachineName + "' AS nvarchar(255)) END
+        SET @myInstanceName = '" + $Record.InstanceName + "'
+        SET @myDatabaseName = N'" + $Record.DatabaseName + "'
+        SET @myBackup_start_date = CAST('" + $Record.backup_start_date.ToString() + "' AS DATETIME)
+        SET @myBackup_finish_date = CAST('" + $Record.backup_finish_date.ToString() + "' AS DATETIME)
+        SET @myExpiration_date = CASE WHEN '" + $Record.expiration_date.ToString() + "'='' THEN NULL ELSE CAST('" + $Record.expiration_date.ToString() + "' AS DATETIME) END
+        SET @myBackupType = N'" + $Record.BackupType + "'
+        SET @myBackupFirstLSN = CASE WHEN '" + $Record.BackupFirstLSN.ToString() + "'='' THEN NULL ELSE CAST('" + $Record.BackupFirstLSN.ToString() + "' AS decimal(28,0)) END
+        SET @myBackupLastLSN = CASE WHEN '" + $Record.BackupLastLSN.ToString() + "'='' THEN NULL ELSE CAST('" + $Record.BackupLastLSN.ToString() + "' AS decimal(28,0)) END
+        SET @myBackupFilePath = N'" + $Record.BackupFilePath + "'
+        SET @myBackupFileName = N'" + $Record.BackupFileName + "'
+        SET @myMax_family_sequence_number = " + $Record.max_family_sequence_number.ToString() + "
+        SET @myDeleteDate = NULL
+        SET @myIsDeleted = 0
+        SET @myTransferStatus = N'"+ $TransferStatus +"';
+        
+        MERGE [dbo].[TransferredFiles] AS myTarget
+        USING (SELECT @myBatchId AS BatchId,@myDestination AS Destination,@myDestinationFolder AS DestinationFolder,@myUncBackupFilePath AS UncBackupFilePath,@myMedia_set_id AS Media_set_id,@myFamily_sequence_number AS Family_sequence_number,@myMachineName AS MachineName,@myInstanceName AS InstanceName,@myDatabaseName AS DatabaseName,@myBackup_start_date AS Backup_start_date,@myBackup_finish_date AS Backup_finish_date,@myExpiration_date AS Expiration_date,@myBackupType AS BackupType,@myBackupFirstLSN AS BackupFirstLSN,@myBackupLastLSN AS BackupLastLSN,@myBackupFilePath AS BackupFilePath,@myBackupFileName AS BackupFileName,@myMax_family_sequence_number AS Max_family_sequence_number,@myDeleteDate AS DeleteDate,@myIsDeleted AS IsDeleted,@myTransferStatus AS TransferStatus) AS mySource
+            ON myTarget.Destination=mySource.Destination AND myTarget.DestinationFolder=mySource.DestinationFolder AND myTarget.Media_set_id=mySource.Media_set_id AND myTarget.Family_sequence_number=mySource.Family_sequence_number AND myTarget.InstanceName=mySource.InstanceName AND myTarget.DatabaseName=mySource.DatabaseName
+        WHEN MATCHED THEN
+             UPDATE SET
+             [myTarget].[BatchId]=[mySource].[BatchId]
+            ,[myTarget].[Destination]=[mySource].[Destination]
+            ,[myTarget].[DestinationFolder]=[mySource].[DestinationFolder]
+            ,[myTarget].[UncBackupFilePath]=[mySource].[UncBackupFilePath]
+            ,[myTarget].[media_set_id]=[mySource].[media_set_id]
+            ,[myTarget].[family_sequence_number]=[mySource].[family_sequence_number]
+            ,[myTarget].[MachineName]=[mySource].[MachineName]
+            ,[myTarget].[InstanceName]=[mySource].[InstanceName]
+            ,[myTarget].[DatabaseName]=[mySource].[DatabaseName]
+            ,[myTarget].[backup_start_date]=[mySource].[backup_start_date]
+            ,[myTarget].[backup_finish_date]=[mySource].[backup_finish_date]
+            ,[myTarget].[expiration_date]=[mySource].[expiration_date]
+            ,[myTarget].[BackupType]=[mySource].[BackupType]
+            ,[myTarget].[BackupFirstLSN]=[mySource].[BackupFirstLSN]
+            ,[myTarget].[BackupLastLSN]=[mySource].[BackupLastLSN]
+            ,[myTarget].[BackupFilePath]=[mySource].[BackupFilePath]
+            ,[myTarget].[BackupFileName]=[mySource].[BackupFileName]
+            ,[myTarget].[max_family_sequence_number]=[mySource].[max_family_sequence_number]
+            ,[myTarget].[DeleteDate]=[mySource].[DeleteDate]
+            ,[myTarget].[IsDeleted]=[mySource].[IsDeleted]
+            ,[myTarget].[TransferStatus]=[mySource].[TransferStatus]
+        WHEN NOT MATCHED THEN
+            INSERT ([BatchId],[Destination],[DestinationFolder],[UncBackupFilePath],[media_set_id],[family_sequence_number],[MachineName],[InstanceName],[DatabaseName],[backup_start_date],[backup_finish_date],[expiration_date],[BackupType],[BackupFirstLSN],[BackupLastLSN],[BackupFilePath],[BackupFileName],[max_family_sequence_number],[DeleteDate],[IsDeleted],[TransferStatus])
+            VALUES ([mySource].[BatchId],[mySource].[Destination],[mySource].[DestinationFolder],[mySource].[UncBackupFilePath],[mySource].[media_set_id],[mySource].[family_sequence_number],[mySource].[MachineName],[mySource].[InstanceName],[mySource].[DatabaseName],[mySource].[backup_start_date],[mySource].[backup_finish_date],[mySource].[expiration_date],[mySource].[BackupType],[mySource].[BackupFirstLSN],[mySource].[BackupLastLSN],[mySource].[BackupFilePath],[mySource].[BackupFileName],[mySource].[max_family_sequence_number],[mySource].[DeleteDate],[mySource].[IsDeleted],[mySource].[TransferStatus]);
     "
     try{
         Invoke-Sqlcmd -ConnectionString $LogInstanceConnectionString -Query $myCommand -OutputSqlErrors $true -QueryTimeout 0 -ErrorAction Stop
@@ -1270,14 +1324,23 @@ Function SourceInstance.SetBackupsToTransferred {  #Set backup file(s) to transf
 
 #---------------------------------------------------------MAIN BODY
 #--=======================Initial Log Modules
-Write-Log -Type INF -Content "BackupTransfer started..."
+$mySysToday = (Get-Date -Format "yyyyMMdd").ToString()
+$LogFilePath=$LogFilePath.Replace("{Date}",$mySysToday)
+Write-Log -Type INF -Content "==========BackupTransfer started...=========="
 $mySysErrCount=0
 $mySysWrnCount=0
 $mySysTransferredFilesTableName="[dbo].[TransferredFiles]"
 $mySysTransferredFilesLogFeature=[bool]$false
 $mySysEventsLogToTableFeature=[bool]$false
 $mySysBatchId=(New-Guid).ToString()
-if (!($DestinationCredential) -and $DestinationCredentialName) {$DestinationCredential = (Get-StoredCredential -Target $DestinationCredentialName).GetNetworkCredential()}
+if(-not(Get-Module CredentialManager)){Import-Module CredentialManager}
+switch ($CredentialType) {
+    "BySystemNetworkCredentialObject" {$DestinationCredential=$DestinationCredentialObject}
+    "ByStoredCredentialName" {$DestinationCredential = (Get-StoredCredential -Target $DestinationCredentialName).GetNetworkCredential()}
+    "ByCiphertextFile" {[SecureString]$myPassword = Get-Content $DestinationCredentialCiphertextFile | ConvertTo-SecureString ; $myUser=$DestinationCredentialCiphertextUser ; $DestinationCredential = (New-Object System.Management.Automation.PsCredential -ArgumentList $myUser,$myPassword).GetNetworkCredential()}
+    "ByCiphertext" {[SecureString]$myPassword = $DestinationCredentialCiphertextPassword | ConvertTo-SecureString ; $myUser=$DestinationCredentialCiphertextUser ; $DestinationCredential = (New-Object System.Management.Automation.PsCredential -ArgumentList $myUser,$myPassword).GetNetworkCredential()}
+}
+if (!($DestinationCredential)) {Write-Log -Type ERR -Content ("Credential creation failed.") -Terminate}
 
 Write-Log -Type INF -Content ("Initializing EventsTable.Create.")
 if ($null -ne $LogInstanceConnectionString) {$mySysEventsLogToTableFeature=EventsTable.Create -LogInstanceConnectionString $LogInstanceConnectionString -TableName $LogTableName} else {$mySysEventsLogToTableFeature=[bool]$false}
@@ -1354,10 +1417,10 @@ $myUntransferredBackups | ForEach-Object {
     IF ($myDestinationFolder -like "*{CustomRule02}*") {
         $myRuleTemplate="{CustomRule02}"
         $myTemporalDestinationFolder=""
-        IF ($myJalaliMonth -eq 1 -and $myJalaliDayOfMonth -eq 1) {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "Yearly")+";"}
-        ELSEIF ($myJalaliDayOfMonth -eq 1) {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "Monthly")+";"}
-        ELSEIF ($myJalaliDayOfWeek -eq "1") {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "Weekly")+";"}
-        ELSE {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "Daily")}
+        IF ($myJalaliMonth -eq 1 -and $myJalaliDayOfMonth -eq 1) {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "yearly")+";"}
+        ELSEIF ($myJalaliDayOfMonth -eq 1) {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "monthly")+";"}
+        ELSEIF ($myJalaliDayOfWeek -eq "1") {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "weekly")+";"}
+        ELSE {$myTemporalDestinationFolder+=$myDestinationFolder.Replace($myRuleTemplate, "daily")}
         IF ($myTemporalDestinationFolder.Length -gt 0) {$myDestinationFolder=$myTemporalDestinationFolder}
     }
     Add-Member -InputObject $_ -NotePropertyName "DestinationFolder" -NotePropertyValue $myDestinationFolder
@@ -1398,10 +1461,11 @@ switch ($DestinationType)
                                                             $mySourceFile=if($myUseUncSource -eq $false){$_.BackupFilePath}else{$_.UncBackupFilePath}
                                                             ForEach ($myPath IN $_.DestinationFolder.Split(";"))
                                                             {
+                                                                TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "NONE" -Record $_
                                                                 $mySendResult=FtpByWinscp -Operation UPLOAD -FtpServer $Destination -FtpCredential $DestinationCredential -WinscpPath $WinscpPath -FtpDestinationPath ($myPath+"/"+$_.BackupFileName) -SourceFilePath $mySourceFile
                                                                 if($mySendResult -eq $true) {
                                                                     SourceInstance.SetBackupsToTransferred -SourceInstanceConnectionString $SourceInstanceConnectionString -MediaSetId ($_.media_set_id) -BackupFinishDate ($_.backup_finish_date) -TransferedSuffix $TransferedSuffix
-                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -Record $_
+                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "SUCCEED" -Record $_
                                                                 }
                                                             }
                                                         }
@@ -1410,10 +1474,11 @@ switch ($DestinationType)
                                                             $mySourceFile=if($myUseUncSource -eq $false){$_.BackupFilePath}else{$_.UncBackupFilePath}
                                                             ForEach ($myPath IN $_.DestinationFolder.Split(";"))
                                                             {
+                                                                TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "NONE" -Record $_
                                                                 $mySendResult=SftpByWinscp -Operation UPLOAD -SftpServer $Destination -SftpCredential $DestinationCredential -WinscpPath $WinscpPath -SftpDestinationPath ($myPath+"/"+$_.BackupFileName) -SourceFilePath $mySourceFile -SftpSshKeyFingerprint $SshHostKeyFingerprint
                                                                 if($mySendResult -eq $true) {
                                                                     SourceInstance.SetBackupsToTransferred -SourceInstanceConnectionString $SourceInstanceConnectionString -MediaSetId ($_.media_set_id) -BackupFinishDate ($_.backup_finish_date) -TransferedSuffix $TransferedSuffix
-                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -Record $_
+                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "SUCCEED" -Record $_
                                                                 }
                                                             }
                                                         }
@@ -1422,10 +1487,11 @@ switch ($DestinationType)
                                                             $mySourceFile=if($myUseUncSource -eq $false){$_.BackupFilePath}else{$_.UncBackupFilePath}
                                                             ForEach ($myPath IN $_.DestinationFolder.Split(";"))
                                                             {
+                                                                TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "NONE" -Record $_
                                                                 $mySendResult=ScpByWinscp -Operation UPLOAD -ScpServer $Destination -ScpCredential $DestinationCredential -WinscpPath $WinscpPath -ScpDestinationPath ($myPath+"/"+$_.BackupFileName) -SourceFilePath $mySourceFile -ScpSshKeyFingerprint $SshHostKeyFingerprint
                                                                 if($mySendResult -eq $true) {
                                                                     SourceInstance.SetBackupsToTransferred -SourceInstanceConnectionString $SourceInstanceConnectionString -MediaSetId ($_.media_set_id) -BackupFinishDate ($_.backup_finish_date) -TransferedSuffix $TransferedSuffix
-                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName  -BatchId $mySysBatchId -Destination $Destination -Record $_
+                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "SUCCEED" -Record $_
                                                                 }
                                                             }
                                                         }
@@ -1434,10 +1500,11 @@ switch ($DestinationType)
                                                             $mySourceFile=if($myUseUncSource -eq $false){$_.BackupFilePath}else{$_.UncBackupFilePath}
                                                             ForEach ($myPath IN $_.DestinationFolder.Split(";")) 
                                                             {
+                                                                TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "NONE" -Record $_
                                                                 $mySendResult=UNC.UPLOAD -UncSharedFolderPath $Destination -UncCredential $DestinationCredential -UncDestinationPath ($myPath+"\"+$_.BackupFileName) -TemporalDriveLetter "A" -SourceFilePath $mySourceFile -ActionType $ActionType
                                                                 if($mySendResult -eq $true) {
                                                                     SourceInstance.SetBackupsToTransferred -SourceInstanceConnectionString $SourceInstanceConnectionString -MediaSetId ($_.media_set_id) -BackupFinishDate ($_.backup_finish_date) -TransferedSuffix $TransferedSuffix
-                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -Record $_
+                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "SUCCEED" -Record $_
                                                                 }
                                                             } 
                                                         }
@@ -1446,10 +1513,11 @@ switch ($DestinationType)
                                                             $mySourceFile=if($myUseUncSource -eq $false){$_.BackupFilePath}else{$_.UncBackupFilePath}
                                                             ForEach ($myPath IN $_.DestinationFolder.Split(";")) 
                                                             {
+                                                                TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "NONE" -Record $_
                                                                 $mySendResult=UNC.UPLOAD -UncSharedFolderPath $Destination -UncCredential $DestinationCredential -UncDestinationPath ($myPath+"\"+$_.BackupFileName) -TemporalDriveLetter "A" -SourceFilePath $mySourceFile -ActionType $ActionType
                                                                 if($mySendResult -eq $true) {
                                                                     SourceInstance.SetBackupsToTransferred -SourceInstanceConnectionString $SourceInstanceConnectionString -MediaSetId ($_.media_set_id) -BackupFinishDate ($_.backup_finish_date) -TransferedSuffix $TransferedSuffix
-                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -Record $_
+                                                                    TransferredFilesTable.Insert -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -BatchId $mySysBatchId -Destination $Destination -TransferStatus "SUCCEED" -Record $_
                                                                 }
                                                             } 
                                                         }
@@ -1461,4 +1529,4 @@ Write-Log -Type INF -Content ("Set Delete date of backups to "+$RetainDaysOnDest
 $myUpdatedRecords=TransferredFilesTable.SetDeleteDateOfFiles -LogInstanceConnectionString $LogInstanceConnectionString -TableName $mySysTransferredFilesTableName -RetainDaysOnDestination $RetainDaysOnDestination -InstanceNameToFilter $mySysSourceInstanceName
 
 #--=======================Finalize Log Modules
-Write-Log -Type INF -Content ("BackupTransfer Finished with " + $mySysErrCount.ToString() + " Error count and " + $mySysWrnCount.ToString() + " Warning count.")
+Write-Log -Type INF -Content ("==========BackupTransfer Finished with " + $mySysErrCount.ToString() + " Error count and " + $mySysWrnCount.ToString() + " Warning count.==========")

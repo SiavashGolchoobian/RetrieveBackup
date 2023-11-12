@@ -1,0 +1,5 @@
+Requirements:
+	Poratble or Installed WinScp
+	Windows Powershell 5 or later versions
+	SqlServer powershell module
+	CredentialManager powershell module

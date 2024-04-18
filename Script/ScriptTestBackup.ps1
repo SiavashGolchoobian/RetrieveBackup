@@ -10,12 +10,12 @@ Param(
     [string]$ErrorFile
 )
 
-$myErrorFile = $ErrorFile # "U:\Databases\Temp\BackupTextResult.txt"
-$myRestoreInstance = $RestoreInstance # "DB-BK-DBV02.SAIPACORP.COM\NODE,49149"
-$myDestinationPath = $DestinationPath # "\\DB-BK-DBV02\U$\Databases\Backup\"
-$myMonitoringServer = $MonitoringServer #"DB-MN-DLV02.SAIPACORP.COM\NODE,49149" 
-$myDataFilePath = $DataFilePath # "F:\Data01\Databases\Data"
-$myLogFilePath = $LogFilePath # "F:\Log01\Databases\Log"
+$myErrorFile = $ErrorFile # "C:\Databases\Temp\BackupTextResult.txt"
+$myRestoreInstance = $RestoreInstance # "myBackup.sqldeep.local\NODE,49149"
+$myDestinationPath = $DestinationPath # "\\myBackup\C$\Databases\Backup\"
+$myMonitoringServer = $MonitoringServer #"myLog.sqldeep.local\NODE,49149" 
+$myDataFilePath = $DataFilePath # "D:\Databases\Data"
+$myLogFilePath = $LogFilePath # "L:\Databases\Log"
 $DatabaseReportStore = $DatabaseReportStore #"SqlDeep"
 $myMaximumTryCountToFindUncheckedBackup = 5
 
